@@ -4,7 +4,7 @@ use rmcp::{
     service::RequestContext,
     transport::{
         AuthClient, AuthorizationManager, StreamableHttpClientTransport,
-        auth::{AuthorizationCallback, OAuthState},
+        auth::{AuthorizationCallback, AuthorizationRequest, OAuthState},
         streamable_http_client::StreamableHttpClientTransportConfig,
     },
 };
@@ -205,11 +205,10 @@ async fn perform_oauth_flow(
 
     // Discover + register + get auth URL
     oauth
-        .start_authorization_with_metadata_url(
-            &[],
-            REDIRECT_URI,
-            Some("conformance-client"),
-            Some(CIMD_CLIENT_METADATA_URL),
+        .start_authorization(
+            AuthorizationRequest::new(REDIRECT_URI)
+                .with_client_name("conformance-client")
+                .with_client_metadata_url(CIMD_CLIENT_METADATA_URL),
         )
         .await?;
 
@@ -254,10 +253,12 @@ async fn perform_oauth_flow_preregistered(
 ) -> anyhow::Result<AuthClient<reqwest::Client>> {
     let mut oauth = OAuthState::new(server_url, None).await?;
 
-    let config = rmcp::transport::auth::OAuthClientConfig::new(client_id, REDIRECT_URI)
-        .with_client_secret(client_secret);
     oauth
-        .start_authorization_with_preregistered_client(config)
+        .start_authorization(
+            AuthorizationRequest::new(REDIRECT_URI)
+                .with_preregistered_client(client_id)
+                .with_client_secret(client_secret),
+        )
         .await?;
 
     let auth_url = oauth.get_authorization_url().await?;
@@ -313,11 +314,10 @@ async fn run_auth_scope_step_up_client(
     // First auth
     let mut oauth = OAuthState::new(server_url, None).await?;
     oauth
-        .start_authorization_with_metadata_url(
-            &[],
-            REDIRECT_URI,
-            Some("conformance-client"),
-            Some(CIMD_CLIENT_METADATA_URL),
+        .start_authorization(
+            AuthorizationRequest::new(REDIRECT_URI)
+                .with_client_name("conformance-client")
+                .with_client_metadata_url(CIMD_CLIENT_METADATA_URL),
         )
         .await?;
 
@@ -363,11 +363,11 @@ async fn run_auth_scope_step_up_client(
 
                 let mut oauth2 = OAuthState::new(server_url, None).await?;
                 oauth2
-                    .start_authorization_with_metadata_url(
-                        SCOPE_STEP_UP_ESCALATED_SCOPES,
-                        REDIRECT_URI,
-                        Some("conformance-client"),
-                        Some(CIMD_CLIENT_METADATA_URL),
+                    .start_authorization(
+                        AuthorizationRequest::new(REDIRECT_URI)
+                            .with_scopes(SCOPE_STEP_UP_ESCALATED_SCOPES.iter().copied())
+                            .with_client_name("conformance-client")
+                            .with_client_metadata_url(CIMD_CLIENT_METADATA_URL),
                     )
                     .await?;
                 let auth_url2 = oauth2.get_authorization_url().await?;
@@ -413,11 +413,10 @@ async fn run_auth_scope_retry_limit_client(
     loop {
         let mut oauth = OAuthState::new(server_url, None).await?;
         oauth
-            .start_authorization_with_metadata_url(
-                &[],
-                REDIRECT_URI,
-                Some("conformance-client"),
-                Some(CIMD_CLIENT_METADATA_URL),
+            .start_authorization(
+                AuthorizationRequest::new(REDIRECT_URI)
+                    .with_client_name("conformance-client")
+                    .with_client_metadata_url(CIMD_CLIENT_METADATA_URL),
             )
             .await?;
         let auth_url = oauth.get_authorization_url().await?;
