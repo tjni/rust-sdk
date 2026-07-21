@@ -15,11 +15,4 @@
 
 server: []
 
-client:
-  # Client does not yet send MCP-Protocol-Version header pre-initialize as
-  # required by the 2026-07-28 stateless lifecycle.
-  # tracked in #1002
-  - tools_call
-  # Auth feature gaps in the 2026-07-28 auth scenarios.
-  # tracked in #1002
-  - auth/scope-step-up
+client: []
